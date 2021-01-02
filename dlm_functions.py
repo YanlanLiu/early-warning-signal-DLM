@@ -11,11 +11,11 @@ import matplotlib.pyplot as plt
 
 
 class Prior:
-    def __init__(self, m, C, S, nu):
-        self.m = m
-        self.C = C
-        self.S = S
-        self.nu = nu
+    def __init__(self, m, C, S, nu): 
+        self.m = m # mean of t-distribution 
+        self.C = C # scale matrix of t-distribution
+        self.S = S # precision ~ IG(nu/2,S*nu/2)
+        self.nu = nu # degree of freedom
 
 class Model:
     def __init__(self,Y,X,rseas,delta):
@@ -33,6 +33,11 @@ class Model:
         
         
 def forwardFilteringM(Model):
+    # All the parameters estimated here correspond Eqs. 13-16 and the related ones in the Supplementary Information of Liu et al. (2019)
+    # notation in the code -> notation in Liu et al., 2019: 
+    # m -> m_t; C -> C_t^{**}; nu -> n_t; 
+    # a -> a_t; R -> R_t^{**}; F -> F_t; e -> e_t; y -> y_t; Q -> q_t^{**}; f -> f_t; S -> s_t = d_t/n_t
+    
     Y = Model.Y
     X = Model.X
     rseas = Model.rseas
@@ -75,7 +80,9 @@ def forwardFilteringM(Model):
             e = y-f; ac = (nu+np.power(e,2)/Q)/(nu+1)
             rQ = np.sqrt(Q)
             mlik = tdstr.pdf(e/rQ,nu)/rQ
-            m = a+A*e; C = ac*(R-np.dot(A,np.transpose(A))*Q); nu = nu+1; S = ac*S;
+            m = a+A*e; C = ac*(R-np.dot(A,np.transpose(A))*Q); nu = nu+1; S = ac*S; 
+            # About "S = ac*S" (using the notations in Liu et al. (2019)): 
+            # s_t = d_t/n_t = (d_{t-1}+e_t^2/(q_t^{**}/s_t))/n_t = s_{t-1} * (n_{t-1}+e_t^2/(q_t^{**})/n_t = ac * s_{t-1}
         else:
             m = a; C = R;
             if t<T-1:
@@ -85,8 +92,8 @@ def forwardFilteringM(Model):
         sC = np.concatenate((sC,np.reshape(C,[C.shape[0],C.shape[1],1])),axis=2)
         snu = np.concatenate((snu,[nu]),axis=0)
         sS = np.concatenate((sS,[S]),axis=0)
-        slik = np.concatenate((slik,[mlik]),axis=0)            
-    return {'sm':sm, 'sC':sC ,'snu':snu,'slik':slik}
+        slik = np.concatenate((slik,[mlik]),axis=0)  
+    return {'sm':sm, 'sC':sC ,'snu':snu,'slik':slik} 
 
 def computeAnormaly(CLM,AvgCLM,date0):
     deltaT = timedelta(days=16)
