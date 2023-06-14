@@ -48,7 +48,7 @@ def forwardFilteringM(Model):
     Ftrend = np.array([[1],[0]]);ntrend = len(Ftrend); Gtrend = np.array([[1,1],[0,1]]);itrend = np.arange(0,ntrend)
     nregn = X.shape[1];Fregn = np.zeros([nregn,1]);Gregn=np.eye(nregn);iregn = np.arange(ntrend,ntrend+nregn)
     pseas = len(rseas);nseas = pseas*2;iseas = np.arange(ntrend+nregn,ntrend+nregn+nseas)
-    Fseas = np.matlib.repmat([[1],[0]],pseas,1);Gseas = np.zeros([nseas,nseas]);
+    Fseas = np.tile([[1],[0]],[pseas,1]);Gseas = np.zeros([nseas,nseas]);
     for j in range(pseas):
         c = np.cos(2*np.pi*rseas[j]/period);
         s = np.sin(2*np.pi*rseas[j]/period);
@@ -138,12 +138,11 @@ def Index_low(nn,date0,percentile):
 
 def PlotEWS(N,date0,sm,sC,snu):
     # thresholds for identification of abnormally high autocorrelation (EWS)  
-    # and abnormally low NDVI(ALN)
-    quantile1 = 0.95
-    quantile2 = 0.80 
+    quantile1 = 0.90
+    quantile2 = 0.70
     
     steps = [date0+relativedelta(days=16*i) for i in range(len(N))]
-    lown = Index_low(N,date0,quantile2)
+    lown = Index_low(N,date0,0.8)
     lown_continuous = []
     for i in range(len(lown)):
         tile = [j for j in lown if (j<=lown[i] and j>=lown[i]-5)] 
@@ -181,10 +180,10 @@ def PlotEWS(N,date0,sm,sC,snu):
     plt.setp(ax1.get_xticklabels(), visible=False)
     
     warmup = 47
-    bd = list(map(lambda m,C,nu: m+C*tdstr.ppf(quantile1,nu),sm,sC,snu))
-    bd2 = list(map(lambda m,C,nu: m+C*tdstr.ppf(quantile2,nu),sm,sC,snu))
+    bd = list(map(lambda m,C,nu: m+np.sqrt(C)*tdstr.ppf(quantile1,nu),sm,sC,snu))
+    bd2 = list(map(lambda m,C,nu: m+np.sqrt(C)*tdstr.ppf(quantile2,nu),sm,sC,snu))
     
-    mbd = np.median(bd[warmup:])
+    mbd = np.median(bd2[warmup:])
     ews = np.array([i for i,im in enumerate(sm) if im >mbd])
     ews = ews[ews>warmup]
     ews_continuous = []
